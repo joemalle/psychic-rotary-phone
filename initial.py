@@ -2,7 +2,6 @@ import copy
 
 # vs is a set of integers representing vtxs
 # es is a set of pairs of integers representing (src, dst) vtxs
-#
 class Graph:
   def __init__(self):
     self.vs = set()

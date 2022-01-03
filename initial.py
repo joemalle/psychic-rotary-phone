@@ -1,3 +1,6 @@
+import copy
+from itertools import chain
+
 # vs is a set of integers representing vtxs
 # es is a set of pairs of integers representing (src, dst) vtxs
 #
@@ -171,6 +174,85 @@ class Graph:
       c2g[c].addEdge(e)
     return c2g
 
+  def isomorphism(self, other):
+    if len(self.vs) != len(other.vs):
+      return None
+    
+    if len(self.es) != len(other.es):
+      return None
+    
+    g0 = copy.deepcopy(self)
+    g1 = copy.deepcopy(other)
+
+    def addFullyConnectedVtx(g):
+      newV = g.addVtx()
+      for v in g.vs:
+        g.addEdge((newV, v))
+      return newV
+    
+    v0 = addFullyConnectedVtx(g0)
+    v1 = addFullyConnectedVtx(g1)
+
+    v2v = {}
+    v2v_rev = {}
+
+    def recurse(v0, v1):
+      if (v0 in v2v) != (v1 in v2v_rev):
+        return False
+
+      if v0 not in v2v:
+        assert(v1 not in v2v_rev)
+
+        if g0.inDegree(v0) != g1.inDegree(v1):
+          return False
+
+        if g0.outDegree(v0) != g1.outDegree(v1):
+          return False
+
+        v2v[v0] = v1
+        v2v_rev[v1] = v0
+
+        def match(n0s, n1s):
+          assert(len(n0s) == len(n1s))
+
+          if not n0s and not n1s:
+            return True
+
+          for i0 in range(len(n0s)):
+            for i1 in range(i0, len(n1s)):
+              n1s[i0], n1s[i1] = n1s[i1], n1s[i0]
+              if recurse(n0s[i0], n1s[i0]):
+                break
+              n1s[i0], n1s[i1] = n1s[i1], n1s[i0]
+            else:
+              return False
+          return True
+
+        if match(
+          [e[0] for e in g0.inEdges(v0)],
+          [e[0] for e in g1.inEdges(v1)]
+        ):
+          if match(
+            [e[1] for e in g0.outEdges(v0)],
+            [e[1] for e in g1.outEdges(v1)]
+          ):
+            return True
+
+        del v2v[v0]
+        del v2v_rev[v1]
+
+        return False
+
+      else:
+        assert(v2v_rev[v2v[v0]] == v0)
+        return v2v[v0] == v1
+
+    if recurse(v0, v1):
+      del v2v[v0]
+      return v2v
+    else:
+      return None
+
 def get_g012():
   g = Graph()
   v0 = g.addVtx()
@@ -316,6 +398,24 @@ def test_degree():
   g.addEdge((3,3))
   assert(1 == g.degree(3))
 
+def test_isomorphism():
+  g0 = get_g012()
+  assert(g0.isomorphism(g0))
+  g1 = get_g012()
+  assert(g0.isomorphism(g1))
+  v10 = g1.addVtx()
+  assert(not g0.isomorphism(g1))
+  v00 = g0.addVtx()
+  assert(g0.isomorphism(g1))
+  v01 = g0.addVtx()
+  assert(not g0.isomorphism(g1))
+  v11 = g1.addVtx()
+  assert(g0.isomorphism(g1))
+  g1.addEdge((v11, v10))
+  assert(not g0.isomorphism(g1))
+  g0.addEdge((v00, v01))
+  assert(g0.isomorphism(g1))
+
 def main():
   test_addVtx()
   test_addEdge()
@@ -328,6 +428,7 @@ def main():
   test_streams()
   test_components()
   test_degree()
+  test_isomorphism()
 
 if __name__ == "__main__":
    main()

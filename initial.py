@@ -1,5 +1,4 @@
 import copy
-from itertools import chain
 
 # vs is a set of integers representing vtxs
 # es is a set of pairs of integers representing (src, dst) vtxs
